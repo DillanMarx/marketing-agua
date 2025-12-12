@@ -151,3 +151,54 @@ with tab1:
                 st.rerun()
 
 # === ABA 2: GAMIFICAÇÃO ===
+with tab2:
+    st.subheader("Ranking de Hidratação 🥤")
+    
+    # Recarrega dados frescos para garantir que o ranking esteja "Ao Vivo"
+    df_game = carregar_usuarios() 
+    
+    col_g1, col_g2 = st.columns([1, 2])
+    
+    with col_g1:
+        st.info("Registre sua água aqui 👇")
+        if not df_game.empty:
+            quem = st.selectbox("Quem é você?", df_game['Nome'].unique())
+            qtd = st.radio("Quantidade:", [200, 300, 500], horizontal=True)
+            
+            if st.button("Beber Água 🌊"):
+                idx = df_game[df_game['Nome'] == quem].index
+                # Soma o valor
+                valor_atual = df_game.loc[idx, 'Copo_ML_Hoje'].values[0]
+                df_game.loc[idx, 'Copo_ML_Hoje'] = valor_atual + qtd
+                
+                salvar_dados(df_game, FILE_USUARIOS)
+                st.balloons()
+                st.toast(f"{quem} bebeu +{qtd}ml!")
+                st.rerun() # <--- ISSO ATUALIZA O GRÁFICO IMEDIATAMENTE
+
+        st.markdown("---")
+        if st.button("🔄 Zerar o Dia (Todos)"):
+            df_game['Copo_ML_Hoje'] = 0
+            salvar_dados(df_game, FILE_USUARIOS)
+            st.warning("Ranking zerado!")
+            st.rerun()
+
+    with col_g2:
+        if not df_game.empty:
+            # Ordena e remove quem tem 0 (opcional, aqui deixei todos)
+            df_rank = df_game.sort_values(by="Copo_ML_Hoje", ascending=False)
+            
+            # Gráfico Atualizado
+            st.bar_chart(
+                df_rank, 
+                x="Nome", 
+                y="Copo_ML_Hoje",
+                color="#3498db" # Azul água
+            )
+            
+            # Pódio
+            top1 = df_rank.iloc[0]
+            if top1['Copo_ML_Hoje'] > 0:
+                st.markdown(f"### 👑 Líder: **{top1['Nome']}** ({top1['Copo_ML_Hoje']}ml)")
+            else:
+                st.write("Ranking zerado. Bebam água!")
